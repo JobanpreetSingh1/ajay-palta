@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Sankey,
-
+ 
 } from "recharts";
 
 type UiRole = "input" | "readonly" | "derived" | "hidden" | "hidden_value" | string;
@@ -319,27 +319,27 @@ function getRangeText(it: ItemSchema) {
 function getPanelHeaderColor(panelKey: string) {
   switch (panelKey) {
     case "Editable Inputs":
-      return "#eef4ff";
+      return "#ddeafe";
     case "Reference Inputs":
-      return "#f3f4f6";
+      return "#eaf1ff";
     case "Compression":
-      return "#fff6e8";
+      return "#ffffff3e6";
     case "Pressure & Force":
-      return "#fff1f0";
+      return "#ffe9f0";
     case "Temperature":
-      return "#fff4e5";
+      return "#ffffff2e2";
     case "Heat":
-      return "#fff7f2";
+      return "#ffffff1e6";
     case "Work":
-      return "#eef8f1";
+      return "#e8f7ef";
     case "Efficiency":
-      return "#eefaf2";
+      return "#eaf8f1";
     case "Performance":
-      return "#eef6fb";
+      return "#deefff";
     case "Operating Envelope":
-      return "#f5f7fa";
+      return "#eaf0ff";
     default:
-      return "#f8f9fb";
+      return "#eef4ff";
   }
 }
 
@@ -394,7 +394,7 @@ function linspace(start: number, end: number, count: number) {
 
 
 
-export default function Page() {
+export default function HopeCalc() {
   const graphRef = useRef<HTMLDivElement | null>(null);
   const ihrlRef = useRef<HTMLDivElement | null>(null);
   const netEnergyRef = useRef<HTMLDivElement | null>(null);
@@ -406,11 +406,11 @@ export default function Page() {
   const [keyMetricsOnly, setKeyMetricsOnly] = useState(false);
   const [selectedGraphMetric, setSelectedGraphMetric] = useState("T2_C");
   const [selectedSankeyModelId, setSelectedSankeyModelId] = useState<string>("");
-
+  
 
   const [panelOpen, setPanelOpen] = useState<Record<string, boolean>>({
     "Performance Graph": true,
-
+   
     "Editable Inputs": true,
     "Reference Inputs": false,
     Compression: true,
@@ -548,7 +548,7 @@ export default function Page() {
     }
   }, [models, selectedSankeyModelId]);
 
-
+  
 
   const panels = useMemo(() => {
     if (!schema) return [];
@@ -767,86 +767,86 @@ export default function Page() {
     return "";
   }
 
-  function exportDisplayCsv() {
-    const csv = buildDisplayExportCsv(panels, models);
-    downloadTextFile("hope_display_compare.csv", csv, "text/csv;charset=utf-8");
-  }
+function exportDisplayCsv() {
+  const csv = buildDisplayExportCsv(panels, models);
+  downloadTextFile("hope_display_compare.csv", csv, "text/csv;charset=utf-8");
+}
 
-  async function downloadPanelPng(
-    ref: React.RefObject<HTMLDivElement | null>,
-    fileName: string
-  ) {
-    if (!ref.current) return;
+async function downloadPanelPng(
+  ref: React.RefObject<HTMLDivElement | null>,
+  fileName: string
+) {
+  if (!ref.current) return;
 
-    const dataUrl = await toPng(ref.current, {
+  const dataUrl = await toPng(ref.current, {
+    cacheBust: true,
+    pixelRatio: 2,
+    backgroundColor: "#ffffff",
+  });
+
+  const link = document.createElement("a");
+  link.download = fileName;
+  link.href = dataUrl;
+  link.click();
+}
+
+async function downloadExplorerPdf() {
+  const pdf = new jsPDF("p", "mm", "a4");
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  const sections = [
+    { ref: graphRef, title: "Performance Graph" },
+    { ref: ihrlRef, title: "IHRL Cooling Recovery Flow" },
+    { ref: netEnergyRef, title: "Net Energy Partition" },
+  ];
+
+  let first = true;
+
+  for (const section of sections) {
+    if (!section.ref.current) continue;
+
+    const dataUrl = await toPng(section.ref.current, {
       cacheBust: true,
       pixelRatio: 2,
       backgroundColor: "#ffffff",
     });
 
-    const link = document.createElement("a");
-    link.download = fileName;
-    link.href = dataUrl;
-    link.click();
+    const img = new Image();
+    img.src = dataUrl;
+
+    await new Promise<void>((resolve) => {
+      img.onload = () => resolve();
+    });
+
+    const imgWidth = img.width;
+    const imgHeight = img.height;
+
+    const usableWidth = pageWidth - 20;
+    const usableHeight = pageHeight - 20;
+
+    const scale = Math.min(usableWidth / imgWidth, usableHeight / imgHeight);
+    const renderWidth = imgWidth * scale;
+    const renderHeight = imgHeight * scale;
+
+    if (!first) pdf.addPage();
+
+    pdf.setFontSize(12);
+    pdf.text(section.title, 10, 10);
+    pdf.addImage(dataUrl, "PNG", 10, 15, renderWidth, renderHeight);
+
+    first = false;
   }
 
-  async function downloadExplorerPdf() {
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+  pdf.save("hope_explorer_report.pdf");
+}
 
-    const sections = [
-      { ref: graphRef, title: "Performance Graph" },
-      { ref: ihrlRef, title: "IHRL Cooling Recovery Flow" },
-      { ref: netEnergyRef, title: "Net Energy Partition" },
-    ];
-
-    let first = true;
-
-    for (const section of sections) {
-      if (!section.ref.current) continue;
-
-      const dataUrl = await toPng(section.ref.current, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#ffffff",
-      });
-
-      const img = new Image();
-      img.src = dataUrl;
-
-      await new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-      });
-
-      const imgWidth = img.width;
-      const imgHeight = img.height;
-
-      const usableWidth = pageWidth - 20;
-      const usableHeight = pageHeight - 20;
-
-      const scale = Math.min(usableWidth / imgWidth, usableHeight / imgHeight);
-      const renderWidth = imgWidth * scale;
-      const renderHeight = imgHeight * scale;
-
-      if (!first) pdf.addPage();
-
-      pdf.setFontSize(12);
-      pdf.text(section.title, 10, 10);
-      pdf.addImage(dataUrl, "PNG", 10, 15, renderWidth, renderHeight);
-
-      first = false;
-    }
-
-    pdf.save("hope_explorer_report.pdf");
-  }
-
-  function togglePanel(panelKey: string) {
-    setPanelOpen((prev) => ({
-      ...prev,
-      [panelKey]: !(prev[panelKey] ?? true),
-    }));
-  }
+function togglePanel(panelKey: string) {
+  setPanelOpen((prev) => ({
+    ...prev,
+    [panelKey]: !(prev[panelKey] ?? true),
+  }));
+}
 
   if (loadingSchema && !schema) {
     return (
@@ -864,6 +864,7 @@ export default function Page() {
         fontFamily: "system-ui, Arial",
         maxWidth: 1600,
         margin: "0 auto",
+        color: "#1f2a44",
       }}
     >
       <div
@@ -877,8 +878,8 @@ export default function Page() {
         }}
       >
         <div>
-          <h1 style={{ margin: 0 }}>HOPE Hybrid Cycle Explorer</h1>
-          <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>
+          <h1 style={{ margin: 0, color: "#12213f" }}>HOPE Hybrid Cycle Explorer</h1>
+          <div style={{ fontSize: 13, color: "#4b5f86", marginTop: 4 }}>
             Hydro Oxy Palta Engine • Reference Model • FAQ + White Paper Backed
           </div>
         </div>
@@ -890,8 +891,9 @@ export default function Page() {
             style={{
               padding: "8px 14px",
               borderRadius: 10,
-              border: "1px solid #ccc",
-              background: keyMetricsOnly ? "#f3f4f6" : "#fff",
+              border: "1px solid #aebfdf",
+              background: keyMetricsOnly ? "#eaf1ff" : "#ffffff",
+              color: "#1f2a44",
               cursor: "pointer",
               fontWeight: keyMetricsOnly ? 700 : 400,
             }}
@@ -906,8 +908,9 @@ export default function Page() {
             style={{
               padding: "8px 14px",
               borderRadius: 10,
-              border: "1px solid #ccc",
-              background: "#fff",
+              border: "1px solid #aebfdf",
+              background: "#ffffff",
+              color: "#1f2a44",
               cursor: "pointer",
               opacity: !schema || models.length >= MAX_MODELS ? 0.5 : 1,
             }}
@@ -922,8 +925,9 @@ export default function Page() {
             style={{
               padding: "8px 14px",
               borderRadius: 10,
-              border: "1px solid #ccc",
-              background: "#fff",
+              border: "1px solid #aebfdf",
+              background: "#ffffff",
+              color: "#1f2a44",
               cursor: "pointer",
               opacity: !schema ? 0.5 : 1,
             }}
@@ -937,49 +941,52 @@ export default function Page() {
             style={{
               padding: "8px 14px",
               borderRadius: 10,
-              border: "1px solid #ccc",
-              background: "#fff",
+              border: "1px solid #aebfdf",
+              background: "#ffffff",
+              color: "#1f2a44",
               cursor: "pointer",
             }}
           >
             Export CSV
           </button>
           <button
-            type="button"
-            onClick={() => downloadPanelPng(graphRef, "hope_performance_graph.png")}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 10,
-              border: "1px solid #ccc",
-              background: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            Download Graph PNG
-          </button>
+  type="button"
+  onClick={() => downloadPanelPng(graphRef, "hope_performance_graph.png")}
+  style={{
+    padding: "8px 14px",
+    borderRadius: 10,
+    border: "1px solid #aebfdf",
+    background: "#ffffff",
+    color: "#1f2a44",
+    cursor: "pointer",
+  }}
+>
+Download Graph PNG
+</button>
 
-          <button
-            type="button"
-            onClick={downloadExplorerPdf}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 10,
-              border: "1px solid #ccc",
-              background: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            Download PDF
-          </button>
+<button
+  type="button"
+  onClick={downloadExplorerPdf}
+  style={{
+    padding: "8px 14px",
+    borderRadius: 10,
+    border: "1px solid #aebfdf",
+    background: "#ffffff",
+    color: "#1f2a44",
+    cursor: "pointer",
+  }}
+>
+Download PDF
+</button>
 
-          <div style={{ fontSize: 12, opacity: 0.8 }}>
+          <div style={{ fontSize: 12, color: "#4b5f86" }}>
             {loadingCompute ? "Computing…" : "Ready"}
           </div>
         </div>
       </div>
 
       {err ? (
-        <div style={{ marginBottom: 12, padding: 10, border: "1px solid #f3b", borderRadius: 8 }}>
+        <div style={{ marginBottom: 12, padding: 10, border: "1px solid #ef5d93", borderRadius: 8, background: "#fff2f7", color: "#8a1f4f" }}>
           <b>Error:</b> {err}
         </div>
       ) : null}
@@ -987,9 +994,9 @@ export default function Page() {
       {models.length > 0 ? (
         <section
           style={{
-            border: "1px solid #ddd",
+            border: "1px solid #c3d0e8",
             borderRadius: 14,
-            background: "#fff",
+            background: "#ffffff",
             overflowX: "auto",
             marginBottom: 18,
           }}
@@ -1004,13 +1011,13 @@ export default function Page() {
             <div
               style={{
                 padding: "12px 14px",
-                borderBottom: "1px solid #eee",
-                background: "#f6f7f9",
+                borderBottom: "1px solid #cfdbef",
+                background: "#e7efff",
                 fontWeight: 700,
                 position: "sticky",
                 left: 0,
                 zIndex: 3,
-                boxShadow: "2px 0 0 #eee",
+                boxShadow: "2px 0 0 #cfdbef",
               }}
             >
               Models
@@ -1021,12 +1028,12 @@ export default function Page() {
                 key={model.id}
                 style={{
                   padding: "12px 14px",
-                  borderBottom: "1px solid #eee",
-                  background: "#fafafa",
+                  borderBottom: "1px solid #cfdbef",
+                  background: "#f2f6ff",
                   textAlign: "center",
                   fontWeight: 700,
                   fontSize: 15,
-                  borderLeft: "1px solid #f0f0f0",
+                  borderLeft: "1px solid #d6e1f2",
                 }}
               >
                 {model.name}
@@ -1047,9 +1054,9 @@ export default function Page() {
               <section
                 key={panel.panel_key}
                 style={{
-                  border: "1px solid #ddd",
+                  border: "1px solid #c3d0e8",
                   borderRadius: 14,
-                  background: "#fff",
+                  background: "#ffffff",
                   overflowX: "auto",
                 }}
               >
@@ -1066,7 +1073,7 @@ export default function Page() {
                     background: getPanelHeaderColor(panel.panel_key),
                     cursor: "pointer",
                     textAlign: "left",
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: "1px solid #c9d6ec",
                     fontWeight: 700,
                     letterSpacing: "0.02em",
                   }}
@@ -1074,7 +1081,7 @@ export default function Page() {
                   <span style={{ fontSize: 18, fontWeight: 700 }}>
                     {isOpen ? "▼ " : "▶ "} {panel.panel_key}
                   </span>
-                  <span style={{ fontSize: 12, opacity: 0.6 }}>Panel #{panel.panel_order}</span>
+                  <span style={{ fontSize: 12, color: "#4b5f86" }}>Panel #{panel.panel_order}</span>
                 </button>
 
                 {isOpen ? (
@@ -1085,14 +1092,14 @@ export default function Page() {
                           style={{
                             textAlign: "left",
                             padding: "10px 12px",
-                            borderTop: "1px solid #eee",
-                            borderBottom: "1px solid #eee",
+                            borderTop: "1px solid #cfdbef",
+                            borderBottom: "1px solid #cfdbef",
                             background: getPanelHeaderColor(panel.panel_key),
                             position: "sticky",
                             left: 0,
                             zIndex: 3,
                             minWidth: 260,
-                            boxShadow: "2px 0 0 #eee",
+                            boxShadow: "2px 0 0 #cfdbef",
                           }}
                         >
                           Metric
@@ -1103,11 +1110,11 @@ export default function Page() {
                             key={model.id}
                             style={{
                               padding: "10px 12px",
-                              borderTop: "1px solid #eee",
-                              borderBottom: "1px solid #eee",
+                              borderTop: "1px solid #cfdbef",
+                              borderBottom: "1px solid #cfdbef",
                               background: getPanelHeaderColor(panel.panel_key),
                               minWidth: 180,
-                              borderLeft: "1px solid #f0f0f0",
+                              borderLeft: "1px solid #d6e1f2",
                             }}
                           />
                         ))}
@@ -1123,20 +1130,20 @@ export default function Page() {
                           <tr
                             key={`${panel.panel_key}-${it.metric_key}`}
                             style={{
-                              background: rowIndex % 2 === 0 ? "#ffffff" : "#fafafa",
+                              background: rowIndex % 2 === 0 ? "#ffffff" : "#f2f6ff",
                             }}
                           >
                             <td
                               style={{
                                 padding: "10px 12px",
-                                borderBottom: "1px solid #f0f0f0",
+                                borderBottom: "1px solid #d6e1f2",
                                 verticalAlign: "top",
-                                background: rowIndex % 2 === 0 ? "#ffffff" : "#fafafa",
+                                background: rowIndex % 2 === 0 ? "#ffffff" : "#f2f6ff",
                                 position: "sticky",
                                 left: 0,
                                 zIndex: 2,
                                 minWidth: 260,
-                                boxShadow: "2px 0 0 #eee",
+                                boxShadow: "2px 0 0 #cfdbef",
                               }}
                             >
                               <div style={{ fontWeight: 600 }}>{it.label}</div>
@@ -1145,7 +1152,7 @@ export default function Page() {
                                 <div
                                   style={{
                                     fontSize: 12,
-                                    opacity: 0.65,
+                                    color: "#4b5f86",
                                     marginTop: 4,
                                   }}
                                 >
@@ -1163,10 +1170,10 @@ export default function Page() {
                                   key={`${model.id}-${it.metric_key}`}
                                   style={{
                                     padding: "10px 12px",
-                                    borderBottom: "1px solid #f0f0f0",
+                                    borderBottom: "1px solid #d6e1f2",
                                     textAlign: "right",
                                     verticalAlign: "middle",
-                                    borderLeft: "1px solid #f5f5f5",
+                                    borderLeft: "1px solid #e0e8f7",
                                   }}
                                 >
                                   {isEditable(it) ? (
@@ -1186,14 +1193,15 @@ export default function Page() {
                                         minWidth: 120,
                                         padding: "8px 10px",
                                         borderRadius: 10,
-                                        border: "1px solid #ccc",
+                                        border: "1px solid #aebfdf",
                                         fontSize: 14,
                                         textAlign: "right",
-                                        background: "#fff",
+                                        background: "#ffffff",
+                                        color: "#1f2a44",
                                       }}
                                       inputMode={
                                         normalizeDType(it.dtype) === "number" ||
-                                          normalizeDType(it.dtype) === "percent"
+                                        normalizeDType(it.dtype) === "percent"
                                           ? "decimal"
                                           : "text"
                                       }
@@ -1205,11 +1213,12 @@ export default function Page() {
                                         minWidth: 120,
                                         padding: "8px 10px",
                                         borderRadius: 10,
-                                        border: "1px solid #eee",
-                                        background: "#fff",
+                                        border: "1px solid #cfdbef",
+                                        background: "#ffffff",
                                         fontVariantNumeric: "tabular-nums",
                                         fontFeatureSettings: '"tnum"',
                                         textAlign: "right",
+                                        color: "#1f2a44",
                                       }}
                                     >
                                       {masked ? "••••" : display}
@@ -1230,9 +1239,9 @@ export default function Page() {
 
           <section
             style={{
-              border: "1px solid #ddd",
+              border: "1px solid #c3d0e8",
               borderRadius: 14,
-              background: "#fff",
+              background: "#ffffff",
               overflow: "hidden",
             }}
           >
@@ -1246,10 +1255,10 @@ export default function Page() {
                 alignItems: "center",
                 padding: "14px 16px",
                 border: "none",
-                background: "#eef6fb",
+                background: "#deefff",
                 cursor: "pointer",
                 textAlign: "left",
-                borderBottom: "1px solid #e5e7eb",
+                borderBottom: "1px solid #c9d6ec",
                 fontWeight: 700,
                 letterSpacing: "0.02em",
               }}
@@ -1257,13 +1266,13 @@ export default function Page() {
               <span style={{ fontSize: 18, fontWeight: 700 }}>
                 {(panelOpen["Performance Graph"] ?? true) ? "▼ " : "▶ "} Performance Graph
               </span>
-              <span style={{ fontSize: 12, opacity: 0.6 }}>
+              <span style={{ fontSize: 12, color: "#4b5f86" }}>
                 HOPE Cycle Thermodynamic Trend
               </span>
             </button>
 
             {(panelOpen["Performance Graph"] ?? true) ? (
-              <div ref={graphRef} style={{ padding: 16, background: "#fff" }}>
+              <div ref={graphRef} style={{ padding: 16, background: "#ffffff" }}>
                 <div
                   style={{
                     marginBottom: 14,
@@ -1275,7 +1284,7 @@ export default function Page() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <label style={{ fontSize: 13, fontWeight: 600 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#2a3b5f" }}>
                       Graph Metric:
                     </label>
 
@@ -1285,8 +1294,9 @@ export default function Page() {
                       style={{
                         padding: "8px 10px",
                         borderRadius: 8,
-                        border: "1px solid #ccc",
-                        background: "#fff",
+                        border: "1px solid #aebfdf",
+                        background: "#ffffff",
+                        color: "#1f2a44",
                       }}
                     >
                       {GRAPH_METRIC_OPTIONS.map((opt) => (
@@ -1297,7 +1307,7 @@ export default function Page() {
                     </select>
                   </div>
 
-                  <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#3c5077" }}>
                     {GRAPH_METRIC_OPTIONS.find((x) => x.key === selectedGraphMetric)?.label}
                   </div>
                 </div>
@@ -1305,11 +1315,11 @@ export default function Page() {
                 <div style={{ width: "100%", height: 340 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={graphData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e6e6e6" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#cddaf0" />
                       {selectedGraphMetric === "T2_C" ? (
                         <ReferenceLine
                           y={430}
-                          stroke="orange"
+                          stroke="#f59e0b"
                           strokeDasharray="4 4"
                           label="Knock Limit (~700K)"
                         />
@@ -1336,12 +1346,12 @@ export default function Page() {
             ) : null}
           </section>
 
-
+                   
           <section
             style={{
-              border: "1px solid #ddd",
+              border: "1px solid #c3d0e8",
               borderRadius: 14,
-              background: "#fff",
+              background: "#ffffff",
               overflow: "hidden",
             }}
           >
@@ -1355,10 +1365,10 @@ export default function Page() {
                 alignItems: "center",
                 padding: "14px 16px",
                 border: "none",
-                background: "#f5f7fa",
+                background: "#eaf0ff",
                 cursor: "pointer",
                 textAlign: "left",
-                borderBottom: "1px solid #e5e7eb",
+                borderBottom: "1px solid #c9d6ec",
                 fontWeight: 700,
                 letterSpacing: "0.02em",
               }}
@@ -1366,13 +1376,13 @@ export default function Page() {
               <span style={{ fontSize: 18, fontWeight: 700 }}>
                 {(panelOpen["IHRL Cooling Recovery Flow"] ?? true) ? "▼ " : "▶ "} IHRL Cooling Recovery Flow
               </span>
-              <span style={{ fontSize: 12, opacity: 0.6 }}>
+              <span style={{ fontSize: 12, color: "#4b5f86" }}>
                 Gross cooling split into recovery and residual net loss
               </span>
             </button>
 
-            {(panelOpen["IHRL Cooling Recovery Flow"] ?? true) ? (
-              <div ref={ihrlRef} style={{ padding: 16, background: "#fff" }}>
+           {(panelOpen["IHRL Cooling Recovery Flow"] ?? true) ? (
+             <div ref={ihrlRef} style={{ padding: 16, background: "#ffffff" }}>
                 <div
                   style={{
                     marginBottom: 14,
@@ -1384,7 +1394,7 @@ export default function Page() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <label style={{ fontSize: 13, fontWeight: 600 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#2a3b5f" }}>
                       Model:
                     </label>
 
@@ -1394,8 +1404,9 @@ export default function Page() {
                       style={{
                         padding: "8px 10px",
                         borderRadius: 8,
-                        border: "1px solid #ccc",
-                        background: "#fff",
+                        border: "1px solid #aebfdf",
+                        background: "#ffffff",
+                        color: "#1f2a44",
                       }}
                     >
                       {models.map((model) => (
@@ -1406,7 +1417,7 @@ export default function Page() {
                     </select>
                   </div>
 
-                  <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#3c5077" }}>
                     {sankeyModel?.name ?? ""}
                   </div>
                 </div>
@@ -1421,8 +1432,8 @@ export default function Page() {
                           nodeWidth={20}
                           margin={{ top: 10, right: 120, bottom: 10, left: 120 }}
                           linkCurvature={0.35}
-                          node={{ stroke: "#333", strokeWidth: 1 }}
-                          link={{ stroke: "#888" }}
+                          node={{ stroke: "#24324a", strokeWidth: 1 }}
+                          link={{ stroke: "#6f83a6" }}
                         />
                       </ResponsiveContainer>
                     </div>
@@ -1435,18 +1446,18 @@ export default function Page() {
                         gap: 10,
                       }}
                     >
-                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Cooling Gross</div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #cfdbef", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, color: "#4b5f86" }}>Cooling Gross</div>
                         <div style={{ fontWeight: 700 }}>{ihrlSankeyData.summary.coolGross.toFixed(0)} J</div>
                       </div>
-                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>IHRL Recovery</div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #cfdbef", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, color: "#4b5f86" }}>IHRL Recovery</div>
                         <div style={{ fontWeight: 700 }}>
                           {ihrlSankeyData.summary.ihrl.toFixed(0)} J ({ihrlSankeyData.summary.ihrlPct.toFixed(1)}%)
                         </div>
                       </div>
-                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Cooling Net Loss</div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #cfdbef", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, color: "#4b5f86" }}>Cooling Net Loss</div>
                         <div style={{ fontWeight: 700 }}>
                           {ihrlSankeyData.summary.coolNet.toFixed(0)} J ({ihrlSankeyData.summary.coolNetPct.toFixed(1)}%)
                         </div>
@@ -1460,9 +1471,9 @@ export default function Page() {
 
           <section
             style={{
-              border: "1px solid #ddd",
+              border: "1px solid #c3d0e8",
               borderRadius: 14,
-              background: "#fff",
+              background: "#ffffff",
               overflow: "hidden",
             }}
           >
@@ -1476,10 +1487,10 @@ export default function Page() {
                 alignItems: "center",
                 padding: "14px 16px",
                 border: "none",
-                background: "#f5f7fa",
+                background: "#eaf0ff",
                 cursor: "pointer",
                 textAlign: "left",
-                borderBottom: "1px solid #e5e7eb",
+                borderBottom: "1px solid #c9d6ec",
                 fontWeight: 700,
                 letterSpacing: "0.02em",
               }}
@@ -1487,13 +1498,13 @@ export default function Page() {
               <span style={{ fontSize: 18, fontWeight: 700 }}>
                 {(panelOpen["Sankey Energy Flow"] ?? true) ? "▼ " : "▶ "} Net Energy Partition
               </span>
-              <span style={{ fontSize: 12, opacity: 0.6 }}>
+              <span style={{ fontSize: 12, color: "#4b5f86" }}>
                 Final cycle energy distribution using net cooling loss
               </span>
             </button>
 
             {(panelOpen["Sankey Energy Flow"] ?? true) ? (
-              <div ref={netEnergyRef} style={{ padding: 16, background: "#fff" }}>
+             <div ref={netEnergyRef} style={{ padding: 16, background: "#ffffff" }}>
                 <div
                   style={{
                     marginBottom: 14,
@@ -1505,7 +1516,7 @@ export default function Page() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <label style={{ fontSize: 13, fontWeight: 600 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#2a3b5f" }}>
                       Model:
                     </label>
 
@@ -1515,8 +1526,9 @@ export default function Page() {
                       style={{
                         padding: "8px 10px",
                         borderRadius: 8,
-                        border: "1px solid #ccc",
-                        background: "#fff",
+                        border: "1px solid #aebfdf",
+                        background: "#ffffff",
+                        color: "#1f2a44",
                       }}
                     >
                       {models.map((model) => (
@@ -1527,7 +1539,7 @@ export default function Page() {
                     </select>
                   </div>
 
-                  <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#3c5077" }}>
                     {sankeyModel?.name ?? ""}
                   </div>
                 </div>
@@ -1542,8 +1554,8 @@ export default function Page() {
                           nodeWidth={20}
                           margin={{ top: 10, right: 120, bottom: 10, left: 120 }}
                           linkCurvature={0.35}
-                          node={{ stroke: "#333", strokeWidth: 1 }}
-                          link={{ stroke: "#888" }}
+                          node={{ stroke: "#24324a", strokeWidth: 1 }}
+                          link={{ stroke: "#6f83a6" }}
                         />
                       </ResponsiveContainer>
                     </div>
@@ -1556,28 +1568,28 @@ export default function Page() {
                         gap: 10,
                       }}
                     >
-                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Fuel Input</div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #cfdbef", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, color: "#4b5f86" }}>Fuel Input</div>
                         <div style={{ fontWeight: 700 }}>{sankeyData.summary.qIn.toFixed(0)} J</div>
                       </div>
-                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Brake Work</div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #cfdbef", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, color: "#4b5f86" }}>Brake Work</div>
                         <div style={{ fontWeight: 700 }}>{sankeyData.summary.brakePct.toFixed(1)}%</div>
                       </div>
-                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Exhaust</div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #cfdbef", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, color: "#4b5f86" }}>Exhaust</div>
                         <div style={{ fontWeight: 700 }}>{sankeyData.summary.exhaustPct.toFixed(1)}%</div>
                       </div>
-                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Cooling Net</div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #cfdbef", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, color: "#4b5f86" }}>Cooling Net</div>
                         <div style={{ fontWeight: 700 }}>{sankeyData.summary.coolNetPct.toFixed(1)}%</div>
                       </div>
-                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Friction</div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #cfdbef", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, color: "#4b5f86" }}>Friction</div>
                         <div style={{ fontWeight: 700 }}>{sankeyData.summary.frictionPct.toFixed(1)}%</div>
                       </div>
-                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Unburned</div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #cfdbef", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, color: "#4b5f86" }}>Unburned</div>
                         <div style={{ fontWeight: 700 }}>{sankeyData.summary.unburnedPct.toFixed(1)}%</div>
                       </div>
                     </div>

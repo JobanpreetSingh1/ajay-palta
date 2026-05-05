@@ -28,7 +28,7 @@ export default function CalculatorPage() {
         </header>
       </div>
 
-      <div className="container mt-10 max-w-[1600px] md:mt-12">
+      <div className="container mt-10 max-w-[1600px] md:mt-12 ">
         <HopeCalc />
       </div>
     </main>
