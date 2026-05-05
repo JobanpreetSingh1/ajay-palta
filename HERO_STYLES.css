@@ -1,0 +1,208 @@
+/* HOPE Cycle Hero Section - Standalone CSS */
+
+/* Font Imports */
+@font-face {
+    font-family: 'Sentient';
+    src: url('/fonts/Sentient-Extralight.woff') format('woff');
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Sentient';
+    src: url('/fonts/Sentient-LightItalic.woff') format('woff');
+    font-weight: 300;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* CSS Variables */
+:root {
+    --background: #000000;
+    --foreground: #ffffff;
+    --primary: #FFC700;
+    --primary-foreground: #ffffff;
+    --border: #424242;
+    --font-mono: 'Courier New', monospace;
+    --font-sentient: 'Sentient', sans-serif;
+}
+
+/* Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+}
+
+/* Hero Container */
+.hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+    padding: 1.5rem;
+}
+
+/* Background Layer (WebGL/Particles Canvas) */
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    background: #000000;
+    overflow: hidden;
+    display: block;
+}
+
+.hero-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0; }
+}
+
+/* Content Layer */
+.hero-content {
+    position: relative;
+    z-index: 10;
+    max-width: 56rem;
+    width: 100%;
+    text-align: center;
+}
+
+/* Heading Styles */
+.hero h1 {
+    font-family: var(--font-sentient);
+    font-size: 2.25rem;
+    line-height: 1.08;
+    font-weight: 200;
+    margin: 0;
+    letter-spacing: -0.02em;
+    text-transform: none;
+}
+
+.hero h1 br {
+    display: none;
+}
+
+        .hero h1 i {
+            font-style: italic;
+            font-weight: 300;
+            display: block;
+            color: rgba(255, 255, 255, 1);
+            margin-bottom: 0.1em;
+        }
+
+/* Paragraph Styles */
+.hero p {
+    margin-top: 1.5rem;
+    max-width: 620px;
+    margin-left: auto;
+    margin-right: auto;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Button Styles */
+.hero-button-wrapper {
+    margin-top: 2.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+.hero-button {
+    background-color: #8B8C1A;
+    color: var(--foreground);
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 2px solid #8B8C1A;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 calc(100% - 12px), 0 12px);
+}
+
+.hero-button:hover {
+    background-color: #9BA324;
+    border-color: #9BA324;
+}
+
+.hero-button:active {
+    transform: scale(0.98);
+}
+
+/* Responsive Design */
+@media (min-width: 640px) {
+    .hero {
+        padding: 1.5rem 1.5rem 1.75rem;
+    }
+
+    .hero h1 {
+        font-size: 3rem;
+    }
+
+    .hero h1 br {
+        display: block;
+    }
+
+    .hero h1 i {
+        display: inline;
+    }
+
+    .hero p {
+        margin-top: 1.75rem;
+        font-size: 1rem;
+    }
+
+    .hero-button-wrapper {
+        margin-top: 3rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .hero {
+        padding: 2rem;
+    }
+
+    .hero h1 {
+        font-size: 3.75rem;
+    }
+
+    .hero p {
+        margin-top: 2rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .hero h1 {
+        font-size: 4.5rem;
+    }
+}

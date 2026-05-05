@@ -2,8 +2,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
-
-import { cn } from "@/lib/utils";
 import {
   LineChart,
   Line,
@@ -14,23 +12,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Sankey,
+
 } from "recharts";
-
-/** Dark UI + exports (matches site background) */
-const CAPTURE_BG = "#000000";
-const CHART_AXIS = "rgba(228, 228, 235, 0.8)";
-const CHART_TICK = "#f4f4f5";
-const CHART_GRID = "rgba(255, 255, 255, 0.22)";
-const TOOLTIP_STYLE: React.CSSProperties = {
-  backgroundColor: "#111827",
-  border: "1px solid #6b7280",
-  borderRadius: 8,
-  color: "#f9fafb",
-};
-
-/** Panel shell: visible edge on black backgrounds */
-const panelShell =
-  "rounded-2xl border border-zinc-400/55 bg-zinc-900/95 ring-1 ring-inset ring-white/16 shadow-[0_1px_0_0_rgba(255,255,255,0.08)]";
 
 type UiRole = "input" | "readonly" | "derived" | "hidden" | "hidden_value" | string;
 type DType = "number" | "percent" | "text" | string;
@@ -130,7 +113,7 @@ function isEditable(it: ItemSchema) {
 
 function normalizeDType(dtype?: string): DType {
   const dt = (dtype ?? "").toLowerCase().trim();
-  if (dt === "percent") return "percent";
+  if (dt === "percent " || dt === "percent") return "percent";
   if (dt === "number") return "number";
   if (dt === "text") return "text";
   return dt || "text";
@@ -333,36 +316,30 @@ function getRangeText(it: ItemSchema) {
   return `Range: ${min}–${max}`;
 }
 
-function stableSerializeInputs(inputs: Record<string, any>) {
-  const keys = Object.keys(inputs).sort();
-  return JSON.stringify(keys.map((k) => [k, inputs[k]]));
-}
-
-/** Panel header tints — higher alpha for contrast on near-black */
 function getPanelHeaderColor(panelKey: string) {
   switch (panelKey) {
     case "Editable Inputs":
-      return "rgba(255, 199, 0, 0.22)";
+      return "#eef4ff";
     case "Reference Inputs":
-      return "rgba(255, 255, 255, 0.1)";
+      return "#f3f4f6";
     case "Compression":
-      return "rgba(255, 199, 0, 0.16)";
+      return "#fff6e8";
     case "Pressure & Force":
-      return "rgba(248, 113, 113, 0.16)";
+      return "#fff1f0";
     case "Temperature":
-      return "rgba(251, 146, 60, 0.16)";
+      return "#fff4e5";
     case "Heat":
-      return "rgba(255, 199, 0, 0.14)";
+      return "#fff7f2";
     case "Work":
-      return "rgba(74, 222, 128, 0.14)";
+      return "#eef8f1";
     case "Efficiency":
-      return "rgba(52, 211, 153, 0.16)";
+      return "#eefaf2";
     case "Performance":
-      return "rgba(56, 189, 248, 0.16)";
+      return "#eef6fb";
     case "Operating Envelope":
-      return "rgba(167, 139, 250, 0.16)";
+      return "#f5f7fa";
     default:
-      return "rgba(255, 255, 255, 0.09)";
+      return "#f8f9fb";
   }
 }
 
@@ -417,12 +394,7 @@ function linspace(start: number, end: number, count: number) {
 
 
 
-type HopeCalcProps = {
-  /** When true, hides the duplicate in-component title (use with a page-level hero). */
-  embedded?: boolean;
-};
-
-export default function HopeCalc({ embedded = false }: HopeCalcProps) {
+export default function Page() {
   const graphRef = useRef<HTMLDivElement | null>(null);
   const ihrlRef = useRef<HTMLDivElement | null>(null);
   const netEnergyRef = useRef<HTMLDivElement | null>(null);
@@ -434,11 +406,11 @@ export default function HopeCalc({ embedded = false }: HopeCalcProps) {
   const [keyMetricsOnly, setKeyMetricsOnly] = useState(false);
   const [selectedGraphMetric, setSelectedGraphMetric] = useState("T2_C");
   const [selectedSankeyModelId, setSelectedSankeyModelId] = useState<string>("");
-  
+
 
   const [panelOpen, setPanelOpen] = useState<Record<string, boolean>>({
     "Performance Graph": true,
-   
+
     "Editable Inputs": true,
     "Reference Inputs": false,
     Compression: true,
@@ -526,7 +498,6 @@ export default function HopeCalc({ embedded = false }: HopeCalcProps) {
             snapshot.map(async (model) => {
               const res = await fetch("/api/compute", {
                 method: "POST",
-                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ inputs: model.inputs }),
               });
@@ -577,10 +548,7 @@ export default function HopeCalc({ embedded = false }: HopeCalcProps) {
     }
   }, [models, selectedSankeyModelId]);
 
-  const modelsInputsKey = useMemo(
-    () => models.map((m) => stableSerializeInputs(m.inputs)).join("|"),
-    [models]
-  );
+
 
   const panels = useMemo(() => {
     if (!schema) return [];
@@ -663,13 +631,6 @@ export default function HopeCalc({ embedded = false }: HopeCalcProps) {
     };
   }, [sankeyModel]);
 
-  const hasIhrlFlow = useMemo(() => {
-    if (!ihrlSankeyData) return false;
-    return ihrlSankeyData.links.some(
-      (link) => Number.isFinite(link.value) && link.value > 0
-    );
-  }, [ihrlSankeyData]);
-
   const sankeyData = useMemo(() => {
     if (!sankeyModel) return null;
 
@@ -709,13 +670,6 @@ export default function HopeCalc({ embedded = false }: HopeCalcProps) {
       },
     };
   }, [sankeyModel]);
-
-  const hasNetEnergyFlow = useMemo(() => {
-    if (!sankeyData) return false;
-    return sankeyData.links.some(
-      (link) => Number.isFinite(link.value) && link.value > 0
-    );
-  }, [sankeyData]);
 
   function addModel() {
     if (!schema) return;
@@ -813,141 +767,134 @@ export default function HopeCalc({ embedded = false }: HopeCalcProps) {
     return "";
   }
 
-function exportDisplayCsv() {
-  const csv = buildDisplayExportCsv(panels, models);
-  downloadTextFile("hope_display_compare.csv", csv, "text/csv;charset=utf-8");
-}
-
-async function downloadPanelPng(
-  ref: React.RefObject<HTMLDivElement | null>,
-  fileName: string
-) {
-  if (!ref.current) return;
-
-  const dataUrl = await toPng(ref.current, {
-    cacheBust: true,
-    pixelRatio: 2,
-    backgroundColor: CAPTURE_BG,
-  });
-
-  const link = document.createElement("a");
-  link.download = fileName;
-  link.href = dataUrl;
-  link.click();
-}
-
-async function downloadExplorerPdf() {
-  const pdf = new jsPDF("p", "mm", "a4");
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-
-  const sections = [
-    { ref: graphRef, title: "Performance Graph" },
-    { ref: ihrlRef, title: "IHRL Cooling Recovery Flow" },
-    { ref: netEnergyRef, title: "Net Energy Partition" },
-  ];
-
-  let first = true;
-
-  for (const section of sections) {
-    if (!section.ref.current) continue;
-
-    const dataUrl = await toPng(section.ref.current, {
-      cacheBust: true,
-      pixelRatio: 2,
-      backgroundColor: CAPTURE_BG,
-    });
-
-    const img = new Image();
-    img.src = dataUrl;
-
-    await new Promise<void>((resolve) => {
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
-    });
-
-    const imgWidth = img.width;
-    const imgHeight = img.height;
-
-    const usableWidth = pageWidth - 20;
-    const usableHeight = pageHeight - 20;
-
-    const scale = Math.min(usableWidth / imgWidth, usableHeight / imgHeight);
-    const renderWidth = imgWidth * scale;
-    const renderHeight = imgHeight * scale;
-
-    if (!first) pdf.addPage();
-
-    pdf.setFontSize(12);
-    pdf.text(section.title, 10, 10);
-    pdf.addImage(dataUrl, "PNG", 10, 15, renderWidth, renderHeight);
-
-    first = false;
+  function exportDisplayCsv() {
+    const csv = buildDisplayExportCsv(panels, models);
+    downloadTextFile("hope_display_compare.csv", csv, "text/csv;charset=utf-8");
   }
 
-  pdf.save("hope_explorer_report.pdf");
-}
+  async function downloadPanelPng(
+    ref: React.RefObject<HTMLDivElement | null>,
+    fileName: string
+  ) {
+    if (!ref.current) return;
 
-function togglePanel(panelKey: string) {
-  setPanelOpen((prev) => ({
-    ...prev,
-    [panelKey]: !(prev[panelKey] ?? true),
-  }));
-}
+    const dataUrl = await toPng(ref.current, {
+      cacheBust: true,
+      pixelRatio: 2,
+      backgroundColor: "#ffffff",
+    });
+
+    const link = document.createElement("a");
+    link.download = fileName;
+    link.href = dataUrl;
+    link.click();
+  }
+
+  async function downloadExplorerPdf() {
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    const sections = [
+      { ref: graphRef, title: "Performance Graph" },
+      { ref: ihrlRef, title: "IHRL Cooling Recovery Flow" },
+      { ref: netEnergyRef, title: "Net Energy Partition" },
+    ];
+
+    let first = true;
+
+    for (const section of sections) {
+      if (!section.ref.current) continue;
+
+      const dataUrl = await toPng(section.ref.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+      });
+
+      const img = new Image();
+      img.src = dataUrl;
+
+      await new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+      });
+
+      const imgWidth = img.width;
+      const imgHeight = img.height;
+
+      const usableWidth = pageWidth - 20;
+      const usableHeight = pageHeight - 20;
+
+      const scale = Math.min(usableWidth / imgWidth, usableHeight / imgHeight);
+      const renderWidth = imgWidth * scale;
+      const renderHeight = imgHeight * scale;
+
+      if (!first) pdf.addPage();
+
+      pdf.setFontSize(12);
+      pdf.text(section.title, 10, 10);
+      pdf.addImage(dataUrl, "PNG", 10, 15, renderWidth, renderHeight);
+
+      first = false;
+    }
+
+    pdf.save("hope_explorer_report.pdf");
+  }
+
+  function togglePanel(panelKey: string) {
+    setPanelOpen((prev) => ({
+      ...prev,
+      [panelKey]: !(prev[panelKey] ?? true),
+    }));
+  }
 
   if (loadingSchema && !schema) {
     return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="p-5 font-mono text-foreground"
-      >
-        <h1 className="m-0 font-sentient text-xl tracking-tight">HOPE Hybrid Cycle Explorer</h1>
-        <p className="mt-2 text-sm text-zinc-100">Loading schema…</p>
-      </div>
+      <main style={{ padding: 20, fontFamily: "system-ui, Arial" }}>
+        <h1>HOPE Hybrid Cycle Explorer</h1>
+        <p>Loading schema…</p>
+      </main>
     );
   }
 
-  const Root = embedded ? "section" : "main";
-
-  const btnBase =
-    "rounded-lg border border-zinc-300/70 bg-zinc-700/95 px-3.5 py-2 text-sm font-medium text-zinc-50 shadow-sm transition-colors hover:border-zinc-100 hover:bg-zinc-600/95 disabled:cursor-not-allowed disabled:opacity-45";
-
   return (
-    <Root
-      {...(embedded
-        ? ({ "aria-label": "HOPE Hybrid Cycle Explorer" } as const)
-        : {})}
-      className="mx-auto max-w-[1600px] p-5 font-mono text-foreground antialiased [color-scheme:dark]"
+    <main
+      style={{
+        padding: 20,
+        fontFamily: "system-ui, Arial",
+        maxWidth: 1600,
+        margin: "0 auto",
+      }}
     >
       <div
-        className={cn(
-          "mb-5 flex flex-wrap items-center justify-between gap-4",
-          embedded ? "items-center" : "items-baseline"
-        )}
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+          marginBottom: 18,
+        }}
       >
-        {!embedded ? (
-          <div>
-            <h1 className="m-0 font-sentient text-2xl tracking-tight text-foreground md:text-3xl">
-              HOPE Hybrid Cycle Explorer
-            </h1>
-            <div className="mt-1 text-sm text-zinc-100">
-              Hydro Oxy Palta Engine • Reference Model • FAQ + White Paper Backed
-            </div>
+        <div>
+          <h1 style={{ margin: 0 }}>HOPE Hybrid Cycle Explorer</h1>
+          <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>
+            Hydro Oxy Palta Engine • Reference Model • FAQ + White Paper Backed
           </div>
-        ) : (
-          <div className="text-sm font-semibold text-zinc-100">Explorer controls</div>
-        )}
+        </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={() => setKeyMetricsOnly((v) => !v)}
-            className={cn(
-              btnBase,
-              keyMetricsOnly &&
-                "border-primary bg-primary/25 font-semibold text-primary shadow-[0_0_12px_-2px_rgba(255,199,0,0.35)]"
-            )}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 10,
+              border: "1px solid #ccc",
+              background: keyMetricsOnly ? "#f3f4f6" : "#fff",
+              cursor: "pointer",
+              fontWeight: keyMetricsOnly ? 700 : 400,
+            }}
           >
             {keyMetricsOnly ? "Key Metrics" : "Key Metrics Only"}
           </button>
@@ -956,7 +903,14 @@ function togglePanel(panelKey: string) {
             type="button"
             onClick={addModel}
             disabled={!schema || models.length >= MAX_MODELS}
-            className={btnBase}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 10,
+              border: "1px solid #ccc",
+              background: "#fff",
+              cursor: "pointer",
+              opacity: !schema || models.length >= MAX_MODELS ? 0.5 : 1,
+            }}
           >
             + Add Model
           </button>
@@ -965,54 +919,115 @@ function togglePanel(panelKey: string) {
             type="button"
             onClick={resetAllModels}
             disabled={!schema}
-            className={btnBase}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 10,
+              border: "1px solid #ccc",
+              background: "#fff",
+              cursor: "pointer",
+              opacity: !schema ? 0.5 : 1,
+            }}
           >
             Reset All
           </button>
 
-          <button type="button" onClick={exportDisplayCsv} className={btnBase}>
+          <button
+            type="button"
+            onClick={exportDisplayCsv}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 10,
+              border: "1px solid #ccc",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+          >
             Export CSV
           </button>
           <button
             type="button"
             onClick={() => downloadPanelPng(graphRef, "hope_performance_graph.png")}
-            className={btnBase}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 10,
+              border: "1px solid #ccc",
+              background: "#fff",
+              cursor: "pointer",
+            }}
           >
             Download Graph PNG
           </button>
 
-          <button type="button" onClick={downloadExplorerPdf} className={btnBase}>
+          <button
+            type="button"
+            onClick={downloadExplorerPdf}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 10,
+              border: "1px solid #ccc",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+          >
             Download PDF
           </button>
 
-          <div className="text-xs font-medium text-zinc-400">
+          <div style={{ fontSize: 12, opacity: 0.8 }}>
             {loadingCompute ? "Computing…" : "Ready"}
           </div>
         </div>
       </div>
 
       {err ? (
-        <div className="mb-3 rounded-lg border border-red-400/50 bg-red-950/60 px-3 py-2.5 text-sm text-red-100">
-          <span className="font-semibold">Error:</span> {err}
+        <div style={{ marginBottom: 12, padding: 10, border: "1px solid #f3b", borderRadius: 8 }}>
+          <b>Error:</b> {err}
         </div>
       ) : null}
 
       {models.length > 0 ? (
-        <section className={cn("mb-5 overflow-x-auto", panelShell)}>
+        <section
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: 14,
+            background: "#fff",
+            overflowX: "auto",
+            marginBottom: 18,
+          }}
+        >
           <div
-            className="grid items-stretch"
             style={{
+              display: "grid",
               gridTemplateColumns: `260px repeat(${models.length}, minmax(180px, 1fr))`,
+              alignItems: "stretch",
             }}
           >
-            <div className="sticky left-0 z-[3] border-b border-zinc-600/50 bg-zinc-800/90 px-3.5 py-3 font-bold text-zinc-100 shadow-[2px_0_0_0_rgba(161,161,170,0.35)]">
+            <div
+              style={{
+                padding: "12px 14px",
+                borderBottom: "1px solid #eee",
+                background: "#f6f7f9",
+                fontWeight: 700,
+                position: "sticky",
+                left: 0,
+                zIndex: 3,
+                boxShadow: "2px 0 0 #eee",
+              }}
+            >
               Models
             </div>
 
             {models.map((model) => (
               <div
                 key={model.id}
-                className="border-b border-l border-zinc-600/45 bg-zinc-900/80 px-3.5 py-3 text-center text-[15px] font-bold text-zinc-100"
+                style={{
+                  padding: "12px 14px",
+                  borderBottom: "1px solid #eee",
+                  background: "#fafafa",
+                  textAlign: "center",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  borderLeft: "1px solid #f0f0f0",
+                }}
               >
                 {model.name}
               </div>
@@ -1022,33 +1037,63 @@ function togglePanel(panelKey: string) {
       ) : null}
 
       {!schema ? (
-        <p className="text-sm text-zinc-400">No schema loaded.</p>
+        <p>No schema loaded.</p>
       ) : (
-        <div className="grid gap-5">
+        <div style={{ display: "grid", gap: 18 }}>
           {panels.map((panel) => {
             const isOpen = panelOpen[panel.panel_key] ?? true;
 
             return (
-              <section key={panel.panel_key} className={cn("overflow-x-auto", panelShell)}>
+              <section
+                key={panel.panel_key}
+                style={{
+                  border: "1px solid #ddd",
+                  borderRadius: 14,
+                  background: "#fff",
+                  overflowX: "auto",
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => togglePanel(panel.panel_key)}
-                  style={{ background: getPanelHeaderColor(panel.panel_key) }}
-                  className="flex w-full cursor-pointer items-center justify-between border-b border-zinc-600/50 px-4 py-3.5 text-left font-bold tracking-wide text-zinc-50"
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "14px 16px",
+                    border: "none",
+                    background: getPanelHeaderColor(panel.panel_key),
+                    cursor: "pointer",
+                    textAlign: "left",
+                    borderBottom: "1px solid #e5e7eb",
+                    fontWeight: 700,
+                    letterSpacing: "0.02em",
+                  }}
                 >
-                  <span className="text-lg">
+                  <span style={{ fontSize: 18, fontWeight: 700 }}>
                     {isOpen ? "▼ " : "▶ "} {panel.panel_key}
                   </span>
-                  <span className="text-xs font-medium text-zinc-300">Panel #{panel.panel_order}</span>
+                  <span style={{ fontSize: 12, opacity: 0.6 }}>Panel #{panel.panel_order}</span>
                 </button>
 
                 {isOpen ? (
-                  <table className="min-w-[900px] w-full border-collapse">
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
                     <thead>
                       <tr>
                         <th
-                          style={{ background: getPanelHeaderColor(panel.panel_key) }}
-                          className="sticky left-0 z-[3] min-w-[260px] border-y border-zinc-600/45 px-3 py-2.5 text-left text-zinc-50 shadow-[2px_0_0_0_rgba(161,161,170,0.35)]"
+                          style={{
+                            textAlign: "left",
+                            padding: "10px 12px",
+                            borderTop: "1px solid #eee",
+                            borderBottom: "1px solid #eee",
+                            background: getPanelHeaderColor(panel.panel_key),
+                            position: "sticky",
+                            left: 0,
+                            zIndex: 3,
+                            minWidth: 260,
+                            boxShadow: "2px 0 0 #eee",
+                          }}
                         >
                           Metric
                         </th>
@@ -1056,8 +1101,14 @@ function togglePanel(panelKey: string) {
                         {models.map((model) => (
                           <th
                             key={model.id}
-                            style={{ background: getPanelHeaderColor(panel.panel_key) }}
-                            className="min-w-[180px] border-y border-l border-zinc-600/40 px-3 py-2.5"
+                            style={{
+                              padding: "10px 12px",
+                              borderTop: "1px solid #eee",
+                              borderBottom: "1px solid #eee",
+                              background: getPanelHeaderColor(panel.panel_key),
+                              minWidth: 180,
+                              borderLeft: "1px solid #f0f0f0",
+                            }}
                           />
                         ))}
                       </tr>
@@ -1068,21 +1119,38 @@ function togglePanel(panelKey: string) {
                         const role = (it.ui_role ?? "").toLowerCase();
                         if (role === "hidden") return null;
 
-                        const rowBg =
-                          rowIndex % 2 === 0 ? "bg-[#18181b]" : "bg-[#27272a]";
-
                         return (
-                          <tr key={`${panel.panel_key}-${it.metric_key}`} className={rowBg}>
+                          <tr
+                            key={`${panel.panel_key}-${it.metric_key}`}
+                            style={{
+                              background: rowIndex % 2 === 0 ? "#ffffff" : "#fafafa",
+                            }}
+                          >
                             <td
-                              className={cn(
-                                "sticky left-0 z-[2] min-w-[260px] border-b border-zinc-600/35 px-3 py-2.5 align-top shadow-[2px_0_0_0_rgba(161,161,170,0.3)]",
-                                rowBg
-                              )}
+                              style={{
+                                padding: "10px 12px",
+                                borderBottom: "1px solid #f0f0f0",
+                                verticalAlign: "top",
+                                background: rowIndex % 2 === 0 ? "#ffffff" : "#fafafa",
+                                position: "sticky",
+                                left: 0,
+                                zIndex: 2,
+                                minWidth: 260,
+                                boxShadow: "2px 0 0 #eee",
+                              }}
                             >
-                              <div className="font-semibold text-zinc-50">{it.label}</div>
+                              <div style={{ fontWeight: 600 }}>{it.label}</div>
 
                               {panel.panel_key === "Editable Inputs" && getRangeText(it) ? (
-                                <div className="mt-1 text-xs text-zinc-200">{getRangeText(it)}</div>
+                                <div
+                                  style={{
+                                    fontSize: 12,
+                                    opacity: 0.65,
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  {getRangeText(it)}
+                                </div>
                               ) : null}
                             </td>
 
@@ -1093,7 +1161,13 @@ function togglePanel(panelKey: string) {
                               return (
                                 <td
                                   key={`${model.id}-${it.metric_key}`}
-                                  className="border-b border-l border-zinc-600/30 px-3 py-2.5 text-right align-middle"
+                                  style={{
+                                    padding: "10px 12px",
+                                    borderBottom: "1px solid #f0f0f0",
+                                    textAlign: "right",
+                                    verticalAlign: "middle",
+                                    borderLeft: "1px solid #f5f5f5",
+                                  }}
                                 >
                                   {isEditable(it) ? (
                                     <input
@@ -1107,16 +1181,37 @@ function togglePanel(panelKey: string) {
                                           (e.target as HTMLInputElement).blur();
                                         }
                                       }}
-                                      className="min-w-[120px] w-full rounded-lg border border-zinc-300/70 bg-zinc-800 px-2.5 py-2 text-right text-sm text-zinc-50 outline-none placeholder:text-zinc-300 focus:border-primary focus:ring-2 focus:ring-primary/45"
+                                      style={{
+                                        width: "100%",
+                                        minWidth: 120,
+                                        padding: "8px 10px",
+                                        borderRadius: 10,
+                                        border: "1px solid #ccc",
+                                        fontSize: 14,
+                                        textAlign: "right",
+                                        background: "#fff",
+                                      }}
                                       inputMode={
                                         normalizeDType(it.dtype) === "number" ||
-                                        normalizeDType(it.dtype) === "percent"
+                                          normalizeDType(it.dtype) === "percent"
                                           ? "decimal"
                                           : "text"
                                       }
                                     />
                                   ) : (
-                                    <div className="inline-block min-w-[120px] rounded-lg border border-zinc-300/60 bg-zinc-800/95 px-2.5 py-2 text-right text-sm tabular-nums text-zinc-50">
+                                    <div
+                                      style={{
+                                        display: "inline-block",
+                                        minWidth: 120,
+                                        padding: "8px 10px",
+                                        borderRadius: 10,
+                                        border: "1px solid #eee",
+                                        background: "#fff",
+                                        fontVariantNumeric: "tabular-nums",
+                                        fontFeatureSettings: '"tnum"',
+                                        textAlign: "right",
+                                      }}
+                                    >
                                       {masked ? "••••" : display}
                                     </div>
                                   )}
@@ -1133,68 +1228,95 @@ function togglePanel(panelKey: string) {
             );
           })}
 
-          <section className={cn("overflow-hidden", panelShell)}>
+          <section
+            style={{
+              border: "1px solid #ddd",
+              borderRadius: 14,
+              background: "#fff",
+              overflow: "hidden",
+            }}
+          >
             <button
               type="button"
               onClick={() => togglePanel("Performance Graph")}
-              className="flex w-full cursor-pointer items-center justify-between border-b border-zinc-600/50 bg-primary/20 px-4 py-3.5 text-left font-bold tracking-wide text-zinc-50"
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "14px 16px",
+                border: "none",
+                background: "#eef6fb",
+                cursor: "pointer",
+                textAlign: "left",
+                borderBottom: "1px solid #e5e7eb",
+                fontWeight: 700,
+                letterSpacing: "0.02em",
+              }}
             >
-              <span className="text-lg">
+              <span style={{ fontSize: 18, fontWeight: 700 }}>
                 {(panelOpen["Performance Graph"] ?? true) ? "▼ " : "▶ "} Performance Graph
               </span>
-              <span className="text-xs font-medium text-zinc-300">HOPE Cycle Thermodynamic Trend</span>
+              <span style={{ fontSize: 12, opacity: 0.6 }}>
+                HOPE Cycle Thermodynamic Trend
+              </span>
             </button>
 
             {(panelOpen["Performance Graph"] ?? true) ? (
-              <div ref={graphRef} className="bg-[#111827] p-4">
-                <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <label className="text-sm font-semibold text-zinc-100">Graph Metric:</label>
+              <div ref={graphRef} style={{ padding: 16, background: "#fff" }}>
+                <div
+                  style={{
+                    marginBottom: 14,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <label style={{ fontSize: 13, fontWeight: 600 }}>
+                      Graph Metric:
+                    </label>
 
                     <select
                       value={selectedGraphMetric}
                       onChange={(e) => setSelectedGraphMetric(e.target.value)}
-                      className="rounded-lg border border-zinc-300/70 bg-zinc-800 px-2.5 py-2 text-sm text-zinc-50 outline-none focus:border-primary focus:ring-2 focus:ring-primary/40"
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: "1px solid #ccc",
+                        background: "#fff",
+                      }}
                     >
                       {GRAPH_METRIC_OPTIONS.map((opt) => (
-                        <option key={opt.key} value={opt.key} className="bg-background text-foreground">
+                        <option key={opt.key} value={opt.key}>
                           {opt.label}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  <div className="text-sm font-bold text-primary">
+                  <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>
                     {GRAPH_METRIC_OPTIONS.find((x) => x.key === selectedGraphMetric)?.label}
                   </div>
                 </div>
 
-                <div className="h-[340px] w-full rounded-lg border border-zinc-400/50 bg-[#0b1220] p-1">
+                <div style={{ width: "100%", height: 340 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={graphData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e6e6e6" />
                       {selectedGraphMetric === "T2_C" ? (
                         <ReferenceLine
                           y={430}
-                          stroke="#fdba74"
-                          strokeWidth={2}
-                          strokeDasharray="5 5"
-                          label={{ value: "Knock limit", fill: CHART_TICK, fontSize: 11 }}
+                          stroke="orange"
+                          strokeDasharray="4 4"
+                          label="Knock Limit (~700K)"
                         />
                       ) : null}
-                      <XAxis
-                        dataKey="CR"
-                        stroke={CHART_AXIS}
-                        tick={{ fill: CHART_TICK, fontSize: 12 }}
-                        tickLine={{ stroke: CHART_AXIS }}
-                      />
-                      <YAxis
-                        stroke={CHART_AXIS}
-                        tick={{ fill: CHART_TICK, fontSize: 12 }}
-                        tickLine={{ stroke: CHART_AXIS }}
-                      />
+                      <XAxis dataKey="CR" />
+                      <YAxis />
                       <Tooltip
-                        contentStyle={TOOLTIP_STYLE}
                         formatter={(value: any) => {
                           const num = Number(value);
                           return [formatGraphValue(selectedGraphMetric, num), ""];
@@ -1203,11 +1325,9 @@ function togglePanel(panelKey: string) {
                       <Line
                         type="monotone"
                         dataKey="value"
-                        name="value"
-                        stroke="#FFC700"
-                        strokeWidth={3}
-                        dot={{ r: 5, fill: "#FFC700", stroke: "#1a1a1a", strokeWidth: 1 }}
-                        activeDot={{ r: 7, fill: "#ffdf66", stroke: "#FFC700", strokeWidth: 2 }}
+                        strokeWidth={2.5}
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -1216,45 +1336,84 @@ function togglePanel(panelKey: string) {
             ) : null}
           </section>
 
-          <section className={cn("overflow-hidden", panelShell)}>
+
+          <section
+            style={{
+              border: "1px solid #ddd",
+              borderRadius: 14,
+              background: "#fff",
+              overflow: "hidden",
+            }}
+          >
             <button
               type="button"
               onClick={() => togglePanel("IHRL Cooling Recovery Flow")}
-              className="flex w-full cursor-pointer items-center justify-between border-b border-zinc-600/50 bg-zinc-800/80 px-4 py-3.5 text-left font-bold tracking-wide text-zinc-50"
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "14px 16px",
+                border: "none",
+                background: "#f5f7fa",
+                cursor: "pointer",
+                textAlign: "left",
+                borderBottom: "1px solid #e5e7eb",
+                fontWeight: 700,
+                letterSpacing: "0.02em",
+              }}
             >
-              <span className="text-lg">
+              <span style={{ fontSize: 18, fontWeight: 700 }}>
                 {(panelOpen["IHRL Cooling Recovery Flow"] ?? true) ? "▼ " : "▶ "} IHRL Cooling Recovery Flow
               </span>
-              <span className="text-xs font-medium text-zinc-300">
+              <span style={{ fontSize: 12, opacity: 0.6 }}>
                 Gross cooling split into recovery and residual net loss
               </span>
             </button>
 
             {(panelOpen["IHRL Cooling Recovery Flow"] ?? true) ? (
-              <div ref={ihrlRef} className="bg-[#111827] p-4">
-                <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <label className="text-sm font-semibold text-zinc-100">Model:</label>
+              <div ref={ihrlRef} style={{ padding: 16, background: "#fff" }}>
+                <div
+                  style={{
+                    marginBottom: 14,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <label style={{ fontSize: 13, fontWeight: 600 }}>
+                      Model:
+                    </label>
 
                     <select
                       value={selectedSankeyModelId}
                       onChange={(e) => setSelectedSankeyModelId(e.target.value)}
-                      className="rounded-lg border border-zinc-300/70 bg-zinc-800 px-2.5 py-2 text-sm text-zinc-50 outline-none focus:border-primary focus:ring-2 focus:ring-primary/40"
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: "1px solid #ccc",
+                        background: "#fff",
+                      }}
                     >
                       {models.map((model) => (
-                        <option key={model.id} value={model.id} className="bg-background text-foreground">
+                        <option key={model.id} value={model.id}>
                           {model.name}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  <div className="text-sm font-bold text-primary">{sankeyModel?.name ?? ""}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>
+                    {sankeyModel?.name ?? ""}
+                  </div>
                 </div>
 
-                {ihrlSankeyData && hasIhrlFlow ? (
+                {ihrlSankeyData ? (
                   <>
-                    <div className="h-[280px] w-full rounded-lg border border-zinc-400/50 bg-[#0b1220] p-1">
+                    <div style={{ width: "100%", height: 280 }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <Sankey
                           data={ihrlSankeyData}
@@ -1262,83 +1421,120 @@ function togglePanel(panelKey: string) {
                           nodeWidth={20}
                           margin={{ top: 10, right: 120, bottom: 10, left: 120 }}
                           linkCurvature={0.35}
-                          node={{ stroke: "#fbbf24", strokeWidth: 1.5, fill: "#27272a" }}
-                          link={{ stroke: "rgba(251, 191, 36, 0.55)" }}
+                          node={{ stroke: "#333", strokeWidth: 1 }}
+                          link={{ stroke: "#888" }}
                         />
                       </ResponsiveContainer>
                     </div>
 
-                    <div className="mt-3.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-2.5">
-                      <div className="rounded-xl border border-zinc-600/60 bg-zinc-900/90 p-3">
-                        <div className="text-xs font-medium text-zinc-400">Cooling Gross</div>
-                        <div className="font-bold text-zinc-50">
-                          {ihrlSankeyData.summary.coolGross.toFixed(0)} J
+                    <div
+                      style={{
+                        marginTop: 14,
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Cooling Gross</div>
+                        <div style={{ fontWeight: 700 }}>{ihrlSankeyData.summary.coolGross.toFixed(0)} J</div>
+                      </div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>IHRL Recovery</div>
+                        <div style={{ fontWeight: 700 }}>
+                          {ihrlSankeyData.summary.ihrl.toFixed(0)} J ({ihrlSankeyData.summary.ihrlPct.toFixed(1)}%)
                         </div>
                       </div>
-                      <div className="rounded-xl border border-zinc-600/60 bg-zinc-900/90 p-3">
-                        <div className="text-xs font-medium text-zinc-400">IHRL Recovery</div>
-                        <div className="font-bold text-zinc-50">
-                          {ihrlSankeyData.summary.ihrl.toFixed(0)} J (
-                          {ihrlSankeyData.summary.ihrlPct.toFixed(1)}%)
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-zinc-600/60 bg-zinc-900/90 p-3">
-                        <div className="text-xs font-medium text-zinc-400">Cooling Net Loss</div>
-                        <div className="font-bold text-zinc-50">
-                          {ihrlSankeyData.summary.coolNet.toFixed(0)} J (
-                          {ihrlSankeyData.summary.coolNetPct.toFixed(1)}%)
+                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Cooling Net Loss</div>
+                        <div style={{ fontWeight: 700 }}>
+                          {ihrlSankeyData.summary.coolNet.toFixed(0)} J ({ihrlSankeyData.summary.coolNetPct.toFixed(1)}%)
                         </div>
                       </div>
                     </div>
                   </>
-                ) : (
-                  <p className="text-sm text-zinc-200">
-                    IHRL flow chart is unavailable for the current model values.
-                  </p>
-                )}
+                ) : null}
               </div>
             ) : null}
           </section>
 
-          <section className={cn("overflow-hidden", panelShell)}>
+          <section
+            style={{
+              border: "1px solid #ddd",
+              borderRadius: 14,
+              background: "#fff",
+              overflow: "hidden",
+            }}
+          >
             <button
               type="button"
               onClick={() => togglePanel("Sankey Energy Flow")}
-              className="flex w-full cursor-pointer items-center justify-between border-b border-zinc-600/50 bg-zinc-800/80 px-4 py-3.5 text-left font-bold tracking-wide text-zinc-50"
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "14px 16px",
+                border: "none",
+                background: "#f5f7fa",
+                cursor: "pointer",
+                textAlign: "left",
+                borderBottom: "1px solid #e5e7eb",
+                fontWeight: 700,
+                letterSpacing: "0.02em",
+              }}
             >
-              <span className="text-lg">
+              <span style={{ fontSize: 18, fontWeight: 700 }}>
                 {(panelOpen["Sankey Energy Flow"] ?? true) ? "▼ " : "▶ "} Net Energy Partition
               </span>
-              <span className="text-xs font-medium text-zinc-300">
+              <span style={{ fontSize: 12, opacity: 0.6 }}>
                 Final cycle energy distribution using net cooling loss
               </span>
             </button>
 
             {(panelOpen["Sankey Energy Flow"] ?? true) ? (
-              <div ref={netEnergyRef} className="bg-[#111827] p-4">
-                <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <label className="text-sm font-semibold text-zinc-100">Model:</label>
+              <div ref={netEnergyRef} style={{ padding: 16, background: "#fff" }}>
+                <div
+                  style={{
+                    marginBottom: 14,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <label style={{ fontSize: 13, fontWeight: 600 }}>
+                      Model:
+                    </label>
 
                     <select
                       value={selectedSankeyModelId}
                       onChange={(e) => setSelectedSankeyModelId(e.target.value)}
-                      className="rounded-lg border border-zinc-300/70 bg-zinc-800 px-2.5 py-2 text-sm text-zinc-50 outline-none focus:border-primary focus:ring-2 focus:ring-primary/40"
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: "1px solid #ccc",
+                        background: "#fff",
+                      }}
                     >
                       {models.map((model) => (
-                        <option key={model.id} value={model.id} className="bg-background text-foreground">
+                        <option key={model.id} value={model.id}>
                           {model.name}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  <div className="text-sm font-bold text-primary">{sankeyModel?.name ?? ""}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>
+                    {sankeyModel?.name ?? ""}
+                  </div>
                 </div>
 
-                {sankeyData && hasNetEnergyFlow ? (
+                {sankeyData ? (
                   <>
-                    <div className="h-[360px] w-full rounded-lg border border-zinc-400/50 bg-[#0b1220] p-1">
+                    <div style={{ width: "100%", height: 360 }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <Sankey
                           data={sankeyData}
@@ -1346,59 +1542,52 @@ function togglePanel(panelKey: string) {
                           nodeWidth={20}
                           margin={{ top: 10, right: 120, bottom: 10, left: 120 }}
                           linkCurvature={0.35}
-                          node={{ stroke: "#fbbf24", strokeWidth: 1.5, fill: "#27272a" }}
-                          link={{ stroke: "rgba(251, 191, 36, 0.5)" }}
+                          node={{ stroke: "#333", strokeWidth: 1 }}
+                          link={{ stroke: "#888" }}
                         />
                       </ResponsiveContainer>
                     </div>
 
-                    <div className="mt-3.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-2.5">
-                      <div className="rounded-xl border border-zinc-600/60 bg-zinc-900/90 p-3">
-                        <div className="text-xs font-medium text-zinc-400">Fuel Input</div>
-                        <div className="font-bold text-zinc-50">{sankeyData.summary.qIn.toFixed(0)} J</div>
+                    <div
+                      style={{
+                        marginTop: 14,
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Fuel Input</div>
+                        <div style={{ fontWeight: 700 }}>{sankeyData.summary.qIn.toFixed(0)} J</div>
                       </div>
-                      <div className="rounded-xl border border-zinc-600/60 bg-zinc-900/90 p-3">
-                        <div className="text-xs font-medium text-zinc-400">Brake Work</div>
-                        <div className="font-bold text-zinc-50">
-                          {sankeyData.summary.brakePct.toFixed(1)}%
-                        </div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Brake Work</div>
+                        <div style={{ fontWeight: 700 }}>{sankeyData.summary.brakePct.toFixed(1)}%</div>
                       </div>
-                      <div className="rounded-xl border border-zinc-600/60 bg-zinc-900/90 p-3">
-                        <div className="text-xs font-medium text-zinc-400">Exhaust</div>
-                        <div className="font-bold text-zinc-50">
-                          {sankeyData.summary.exhaustPct.toFixed(1)}%
-                        </div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Exhaust</div>
+                        <div style={{ fontWeight: 700 }}>{sankeyData.summary.exhaustPct.toFixed(1)}%</div>
                       </div>
-                      <div className="rounded-xl border border-zinc-600/60 bg-zinc-900/90 p-3">
-                        <div className="text-xs font-medium text-zinc-400">Cooling Net</div>
-                        <div className="font-bold text-zinc-50">
-                          {sankeyData.summary.coolNetPct.toFixed(1)}%
-                        </div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Cooling Net</div>
+                        <div style={{ fontWeight: 700 }}>{sankeyData.summary.coolNetPct.toFixed(1)}%</div>
                       </div>
-                      <div className="rounded-xl border border-zinc-600/60 bg-zinc-900/90 p-3">
-                        <div className="text-xs font-medium text-zinc-400">Friction</div>
-                        <div className="font-bold text-zinc-50">
-                          {sankeyData.summary.frictionPct.toFixed(1)}%
-                        </div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Friction</div>
+                        <div style={{ fontWeight: 700 }}>{sankeyData.summary.frictionPct.toFixed(1)}%</div>
                       </div>
-                      <div className="rounded-xl border border-zinc-600/60 bg-zinc-900/90 p-3">
-                        <div className="text-xs font-medium text-zinc-400">Unburned</div>
-                        <div className="font-bold text-zinc-50">
-                          {sankeyData.summary.unburnedPct.toFixed(1)}%
-                        </div>
+                      <div style={{ padding: "10px 12px", border: "1px solid #eee", borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Unburned</div>
+                        <div style={{ fontWeight: 700 }}>{sankeyData.summary.unburnedPct.toFixed(1)}%</div>
                       </div>
                     </div>
                   </>
-                ) : (
-                  <p className="text-sm text-zinc-200">
-                    Net energy flow chart is unavailable for the current model values.
-                  </p>
-                )}
+                ) : null}
               </div>
             ) : null}
           </section>
         </div>
       )}
-    </Root>
+    </main>
   );
 }

@@ -29,7 +29,7 @@ export default function CalculatorPage() {
       </div>
 
       <div className="container mt-10 max-w-[1600px] md:mt-12">
-        <HopeCalc embedded />
+        <HopeCalc />
       </div>
     </main>
   );

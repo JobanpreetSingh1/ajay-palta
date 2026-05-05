@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOPE Cycle Hero Section</title>
+    <style>
+        /* Font Imports */
+        @font-face {
+            font-family: 'Sentient';
+            src: url('/fonts/Sentient-Extralight.woff') format('woff');
+            font-weight: 200;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Sentient';
+            src: url('/fonts/Sentient-LightItalic.woff') format('woff');
+            font-weight: 300;
+            font-style: italic;
+            font-display: swap;
+        }
+
+        /* CSS Variables */
+        :root {
+            --background: #000000;
+            --foreground: #ffffff;
+            --primary: #FFC700;
+            --primary-foreground: #ffffff;
+            --border: #424242;
+            --font-mono: 'Courier New', monospace;
+            --font-sentient: 'Sentient', sans-serif;
+        }
+
+        /* Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--foreground);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+        }
+
+        /* Hero Container */
+        .hero {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 1.5rem;
+        }
+
+        /* Background Layer (WebGL/Particles) */
+        .hero-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: #000000;
+            overflow: hidden;
+            display: block;
+        }
+
+        /* Content Layer */
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            max-width: 56rem;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Heading Styles */
+        .hero h1 {
+            font-family: var(--font-sentient);
+            font-size: 2.25rem;
+            line-height: 1.08;
+            font-weight: 200;
+            margin: 0;
+            letter-spacing: -0.02em;
+            text-transform: none;
+        }
+
+        .hero h1 br {
+            display: none;
+        }
+
+        .hero h1 i {
+            font-style: italic;
+            font-weight: 300;
+            display: block;
+            color: rgba(255, 255, 255, 1);
+            margin-bottom: 0.1em;
+        }
+
+        /* Paragraph Styles */
+        .hero p {
+            margin-top: 1.5rem;
+            max-width: 620px;
+            margin-left: auto;
+            margin-right: auto;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Button Styles */
+        .hero-button-wrapper {
+            margin-top: 2.5rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .hero-button {
+            background-color: #C4A000;
+            color: var(--foreground);
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 2px solid #C4A000;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 calc(100% - 12px), 0 12px);
+        }
+
+        .hero-button:hover {
+            background-color: #D4B000;
+            border-color: #D4B000;
+        }
+
+        .hero-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Responsive Design */
+        @media (min-width: 640px) {
+            .hero {
+                padding: 1.5rem 1.5rem 1.75rem;
+            }
+
+            .hero h1 {
+                font-size: 3rem;
+            }
+
+            .hero h1 br {
+                display: block;
+            }
+
+            .hero h1 i {
+                display: inline;
+            }
+
+            .hero p {
+                margin-top: 1.75rem;
+                font-size: 1rem;
+            }
+
+            .hero-button-wrapper {
+                margin-top: 3rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .hero {
+                padding: 2rem;
+            }
+
+            .hero h1 {
+                font-size: 3.75rem;
+            }
+
+            .hero p {
+                margin-top: 2rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .hero h1 {
+                font-size: 4.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <section id="home" class="hero">
+        <!-- Background Layer (WebGL/Particles Canvas) -->
+        <canvas id="particleCanvas" class="hero-background"></canvas>
+
+        <!-- Content Layer -->
+        <div class="hero-content">
+            <h1>
+                HOPE Cycle
+                <br>
+                <i>Coolant Becomes</i> Power
+            </h1>
+            <p>
+                HOPE Cycle recovers wasted heat from coolant and transforms it into clean, practical energy for smarter system performance.
+            </p>
+            <div class="hero-button-wrapper">
+                <a href="/calculator" class="hero-button">Try the Calculator</a>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        class ParticleSystem {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.particles = [];
+                this.time = 0;
+
+                this.resizeCanvas();
+                this.initParticles();
+                window.addEventListener('resize', () => this.resizeCanvas());
+                this.animate();
+            }
+
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            initParticles() {
+                this.particles = [];
+                for (let i = 0; i < 150; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        z: Math.random() * 100,
+                        vx: (Math.random() - 0.5) * 0.3,
+                        vy: (Math.random() - 0.5) * 0.3,
+                        vz: (Math.random() - 0.5) * 0.2
+                    });
+                }
+            }
+
+            updateParticles() {
+                this.time += 0.01;
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                for (let p of this.particles) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.z += p.vz;
+                    
+                    if (p.x > this.canvas.width) p.x = 0;
+                    if (p.x < 0) p.x = this.canvas.width;
+                    if (p.y > this.canvas.height) p.y = 0;
+                    if (p.y < 0) p.y = this.canvas.height;
+                    if (p.z > 100) p.z = 0;
+                    if (p.z < 0) p.z = 100;
+                    
+                    const dx = centerX - p.x;
+                    const dy = centerY - p.y;
+                    p.vx += dx * 0.0001;
+                    p.vy += dy * 0.0001;
+                    p.vx *= 0.99;
+                    p.vy *= 0.99;
+                }
+            }
+
+            drawParticles() {
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Complex woven mesh pattern with particles
+                const spacing = 8;
+                this.ctx.fillStyle = 'rgba(200, 180, 120, 0.15)';
+                this.ctx.strokeStyle = 'rgba(180, 160, 100, 0.1)';
+                this.ctx.lineWidth = 0.4;
+                
+                const flowOffset = (this.time * 8) % 60;
+                
+                // Draw flowing woven lines with particle-like points
+                for (let x = -100; x < this.canvas.width + 100; x += spacing) {
+                    this.ctx.beginPath();
+                    let firstPoint = true;
+                    
+                    for (let y = -100; y < this.canvas.height + 100; y += spacing * 1.5) {
+                        // Create flowing wave distortion
+                        const wave1 = Math.sin((x + y) * 0.02 + this.time * 0.3) * 15;
+                        const wave2 = Math.cos((x - y) * 0.015 + this.time * 0.25) * 12;
+                        const px = x + wave1 + wave2;
+                        const py = y + Math.sin(x * 0.01 + this.time * 0.2) * 10;
+                        
+                        if (firstPoint) {
+                            this.ctx.moveTo(px, py);
+                            firstPoint = false;
+                        } else {
+                            this.ctx.lineTo(px, py);
+                        }
+                    }
+                    this.ctx.stroke();
+                }
+                
+                // Draw perpendicular flowing lines
+                for (let y = -100; y < this.canvas.height + 100; y += spacing) {
+                    this.ctx.beginPath();
+                    let firstPoint = true;
+                    
+                    for (let x = -100; x < this.canvas.width + 100; x += spacing * 1.5) {
+                        const wave1 = Math.cos((x + y) * 0.02 + this.time * 0.3) * 15;
+                        const wave2 = Math.sin((x - y) * 0.015 + this.time * 0.25) * 12;
+                        const px = x + Math.sin(y * 0.01 + this.time * 0.2) * 10;
+                        const py = y + wave1 + wave2;
+                        
+                        if (firstPoint) {
+                            this.ctx.moveTo(px, py);
+                            firstPoint = false;
+                        } else {
+                            this.ctx.lineTo(px, py);
+                        }
+                    }
+                    this.ctx.stroke();
+                }
+                
+                // Draw scattered particles at intersections
+                this.ctx.fillStyle = 'rgba(200, 180, 120, 0.25)';
+                for (let x = -100; x < this.canvas.width + 100; x += spacing * 2) {
+                    for (let y = -100; y < this.canvas.height + 100; y += spacing * 2) {
+                        const wave1 = Math.sin((x + y) * 0.02 + this.time * 0.3) * 15;
+                        const wave2 = Math.cos((x - y) * 0.015 + this.time * 0.25) * 12;
+                        const px = x + wave1 + wave2;
+                        const py = y + Math.sin(x * 0.01 + this.time * 0.2) * 10;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(px, py, 0.8, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                }
+
+                // Radial glow
+                const grad = this.ctx.createRadialGradient(this.canvas.width * 0.3, this.canvas.height * 0.4, 0, this.canvas.width * 0.5, this.canvas.height * 0.5, this.canvas.width * 0.9);
+                grad.addColorStop(0, 'rgba(180, 150, 60, 0.05)');
+                grad.addColorStop(0.5, 'rgba(80, 60, 20, 0.02)');
+                grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                this.ctx.fillStyle = grad;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            animate() {
+                this.updateParticles();
+                this.drawParticles();
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                new ParticleSystem(document.getElementById('particleCanvas'));
+            });
+        } else {
+            new ParticleSystem(document.getElementById('particleCanvas'));
+        }
+    </script>
+</body>
+</html>
