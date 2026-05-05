@@ -18,6 +18,7 @@ export default function CalculatorPage() {
           <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary/90 sm:text-sm">
             HOPE Hybrid Cycle Explorer
           </p>
+          
           <h1 className="mt-5 font-sentient text-3xl leading-[1.12] tracking-tight text-foreground sm:text-4xl md:text-5xl">
             Model your operating point
           </h1>
