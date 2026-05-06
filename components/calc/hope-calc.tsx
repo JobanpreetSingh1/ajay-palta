@@ -196,24 +196,7 @@ function formatValueForDisplay(it: ItemSchema, raw: any) {
   if (dt === "percent" || fmt.startsWith("percent")) {
     const n = Number(raw);
     if (!Number.isFinite(n)) return String(raw);
-    if (fmt === "percent_1") return `${(n * 100).toFixed(1)}%`;
-    if (fmt === "percent_2") return `${(n * 100).toFixed(2)}%`;
-    return `${(n * 100).toFixed(2)}%`;
-  }
-
-  if (fmt === "int") {
-    const n = Number(raw);
-    return Number.isFinite(n) ? String(Math.round(n)) : String(raw);
-  }
-
-  if (fmt === "1dp") {
-    const n = Number(raw);
-    return Number.isFinite(n) ? n.toFixed(1) : String(raw);
-  }
-
-  if (fmt === "2dp") {
-    const n = Number(raw);
-    return Number.isFinite(n) ? n.toFixed(2) : String(raw);
+    return String(n);
   }
 
   return String(raw);
@@ -1164,6 +1147,10 @@ Download PDF
                             {models.map((model) => {
                               const display = getDisplayValue(model, it);
                               const masked = role === "hidden_value";
+                              const panelDisplay = (() => {
+                                const n = Number(display);
+                                return Number.isFinite(n) ? String(Math.trunc(n)) : display;
+                              })();
 
                               return (
                                 <td
@@ -1221,7 +1208,7 @@ Download PDF
                                         color: "#1f2a44",
                                       }}
                                     >
-                                      {masked ? "••••" : display}
+                                      {masked ? "••••" : panelDisplay}
                                     </div>
                                   )}
                                 </td>
